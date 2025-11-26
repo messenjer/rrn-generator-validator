@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Belgian National Register Number Generator and Validator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Free online Belgian National Register Number generator and validator. Generate test RRN numbers, validate existing ones, and copy them easily. Useful for developers, QA, testers, and software integration in Belgium."
+    />
+    <meta
+      name="keywords"
+      content="Belgium, Belgian RRN, national register number, Rijksregisternummer, generator, validator, validate RRN, generate RRN, Belgian ID number, Belgium testing tools, Belgian identification, software testing Belgium, QA Belgium"
+    />
+
+    <!-- DaisyUI v5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@5"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <!-- Tailwind v4 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+
+  <body
+    class="min-h-screen bg-base-200 flex flex-col items-center p-6"
+    data-theme="light"
+  >
+    <div class="max-w-xl w-full space-y-6">
+      <!-- Header with Dark Mode Toggle -->
+      <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-center flex-1">
+          Belgian National Register Number Generator and Validator
+        </h1>
+        <button id="themeToggle" class="btn btn-sm btn-outline ml-2">
+          Dark
+        </button>
+      </div>
+
+      <!-- Generator Section -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body space-y-4">
+          <div class="flex justify-between items-center">
+            <h2 class="card-title">Generate</h2>
+            <button id="randomBtn" class="btn btn-accent">Random</button>
+          </div>
+
+          <!-- Birthdate input -->
+          <input
+            id="birthdate"
+            type="date"
+            class="input input-bordered w-full"
+          />
+
+          <!-- Counter and Gender -->
+          <div class="grid grid-cols-2 gap-4">
+            <input
+              id="counter"
+              type="number"
+              placeholder="Counter"
+              class="input input-bordered w-full"
+            />
+            <select id="gender" class="select select-bordered w-full">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex gap-2">
+            <button id="generateBtn" class="btn btn-primary w-full">
+              Generate
+            </button>
+          </div>
+
+          <!-- Generated output -->
+          <div class="flex gap-2">
+            <input
+              id="generated"
+              class="input input-bordered w-full"
+              readonly
+            />
+            <button id="copyGen" class="btn btn-outline">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validator Section -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body space-y-4">
+          <h2 class="card-title">Validate</h2>
+          <div class="flex gap-2">
+            <input
+              id="toValidate"
+              type="text"
+              placeholder="Enter a number"
+              class="input input-bordered w-full"
+            />
+          </div>
+          <button id="validateBtn" class="btn btn-secondary w-full">
+            Validate
+          </button>
+          <div id="validationResult" class="text-lg font-semibold"></div>
+        </div>
+      </div>
+
+      <!-- GitHub Link -->
+      <div class="text-center pt-4">
+        <a
+          href="https://github.com/messenjer/rrn-generator-validator"
+          target="_blank"
+          class="link link-primary"
+          >View on GitHub</a
+        >
+      </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+    <script>
+      // Dark mode toggle
+      const themeToggle = document.getElementById("themeToggle");
+      themeToggle.onclick = () => {
+        const body = document.body;
+        if (body.getAttribute("data-theme") === "light") {
+          body.setAttribute("data-theme", "dark");
+          themeToggle.textContent = "Light";
+        } else {
+          body.setAttribute("data-theme", "light");
+          themeToggle.textContent = "Dark";
+        }
+      };
+
+      // Toast function
+      function showToast(message) {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = "alert alert-success shadow-lg";
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.remove();
+        }, 2000);
+      }
+
+      // Clipboard helper
+      function copyToClipboard(text) {
+        navigator.clipboard.writeText(text);
+      }
+
+      // RRN computation
+      function computeCheck(base, fullYear) {
+        const n = Number(base);
+        const val = fullYear >= 2000 ? (2 * n) % 97 : n % 97;
+        return String(97 - val).padStart(2, "0");
+      }
+
+      function generateRRN(year, month, day, counter, gender) {
+        const yy = String(year).slice(-2);
+        const mm = String(month).padStart(2, "0");
+        const dd = String(day).padStart(2, "0");
+        let c = Number(counter);
+        if (gender === "M" && c % 2 === 0) c += 1;
+        if (gender === "F" && c % 2 === 1) c += 1;
+        const counterStr = String(c).padStart(3, "0");
+        const base = yy + mm + dd + counterStr;
+        const check = computeCheck(base, year);
+        return base + check;
+      }
+
+      function validateRRN(rrn) {
+        if (!/^[0-9]{11}$/.test(rrn)) return false;
+        const base = rrn.slice(0, 9);
+        const check = rrn.slice(9);
+        const guessYear = Number(rrn.slice(0, 2));
+        const fullYear = guessYear >= 50 ? 1900 + guessYear : 2000 + guessYear;
+        return computeCheck(base, fullYear) === check;
+      }
+
+      function randomRRN() {
+        const year = Math.floor(Math.random() * 70) + 1950;
+        const month = Math.floor(Math.random() * 12) + 1;
+        const day = Math.floor(Math.random() * 28) + 1;
+        const counter = Math.floor(Math.random() * 998) + 1;
+        const gender = Math.random() < 0.5 ? "M" : "F";
+        return {
+          rrn: generateRRN(year, month, day, counter, gender),
+          year,
+          month,
+          day,
+          counter,
+          gender,
+        };
+      }
+
+      // Button events
+      generateBtn.onclick = () => {
+        const dateVal = birthdate.value;
+        if (!dateVal || !counter.value || !gender.value) {
+          generated.value = "Missing fields";
+          return;
+        }
+        const [yearVal, monthVal, dayVal] = dateVal.split("-").map(Number);
+        const counterVal = Number(counter.value);
+        const genderVal = gender.value;
+        generated.value = generateRRN(
+          yearVal,
+          monthVal,
+          dayVal,
+          counterVal,
+          genderVal,
+        );
+      };
+
+      randomBtn.onclick = () => {
+        const r = randomRRN();
+        generated.value = r.rrn;
+        birthdate.value = `${r.year.toString().padStart(4, "0")}-${r.month.toString().padStart(2, "0")}-${r.day.toString().padStart(2, "0")}`;
+        counter.value = r.counter;
+        gender.value = r.gender;
+      };
+
+      copyGen.onclick = () => {
+        if (generated.value.trim().length > 0) {
+          copyToClipboard(generated.value);
+          showToast("Generated RRN copied!");
+        }
+      };
+
+      validateBtn.onclick = () => {
+        const nr = toValidate.value.trim();
+        const ok = validateRRN(nr);
+        validationResult.textContent = ok ? "Valid" : "Invalid";
+        validationResult.className = ok
+          ? "text-green-600 text-lg font-semibold"
+          : "text-red-600 text-lg font-semibold";
+      };
+    </script>
+  </body>
+</html>
